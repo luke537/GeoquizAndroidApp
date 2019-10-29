@@ -12,6 +12,9 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
 public class QuizActivity extends AppCompatActivity {
 
     private static final String KEY_INDEX = "index";
@@ -31,7 +34,10 @@ public class QuizActivity extends AppCompatActivity {
             new Question(R.string.question_oceans, true),
     };
 
+    private ArrayList<Question> mAnsweredQuestions = new ArrayList<Question>();
+
     private int mCurrentIndex = 0;
+    private int mUserScore = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +81,7 @@ public class QuizActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 checkAnswer(true);
+                recordQuestionAnswered();
             }
         });
 
@@ -83,6 +90,11 @@ public class QuizActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 checkAnswer(false);
+                recordQuestionAnswered();
+
+                if (mAnsweredQuestions.size() == mQuestionBank.length) {
+                    displayResult();
+                }
             }
         });
     }
@@ -108,7 +120,7 @@ public class QuizActivity extends AppCompatActivity {
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         super.onSaveInstanceState(savedInstanceState);
-        Log.i(TAG, "onSavedInstanceState() called");
+        Log.d(TAG, "onSavedInstanceState() called");
         savedInstanceState.putInt(KEY_INDEX, mCurrentIndex);
     }
 
@@ -132,6 +144,10 @@ public class QuizActivity extends AppCompatActivity {
         mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
         int question = mQuestionBank[mCurrentIndex].getTextResId();
         mQuestionTextView.setText(question);
+
+        if (isCurrentQuestionAnswered()) {
+            disableTrueFalseButtons();
+        }
     }
 
     private void prevQuestion() {
@@ -143,6 +159,13 @@ public class QuizActivity extends AppCompatActivity {
         }
         int question = mQuestionBank[mCurrentIndex].getTextResId();
         mQuestionTextView.setText(question);
+
+        if (isCurrentQuestionAnswered()) {
+            disableTrueFalseButtons();
+        }
+        else {
+            enableTrueFalseButtons();
+        }
     }
 
     private void checkAnswer(boolean userAnswer) {
@@ -150,6 +173,7 @@ public class QuizActivity extends AppCompatActivity {
         int toastText;
 
         if (currentQuestion.isAnswerTrue() == userAnswer) {
+            mUserScore += 1;
             toastText = R.string.correct_toast;
         }
         else {
@@ -157,6 +181,34 @@ public class QuizActivity extends AppCompatActivity {
         }
 
         Toast.makeText(this, toastText, Toast.LENGTH_LONG).show();
+    }
+
+    public void recordQuestionAnswered() {
+        mAnsweredQuestions.add(mQuestionBank[mCurrentIndex]);
+    }
+
+    public boolean isCurrentQuestionAnswered() {
+        Question currentQuestion = mQuestionBank[mCurrentIndex];
+        if (mAnsweredQuestions.contains(currentQuestion)) {
+            return true;
+        }
+        return false;
+    }
+
+    public void disableTrueFalseButtons() {
+        mFalseButton.setClickable(false);
+        mTrueButton.setClickable(false);
+    }
+
+    public void enableTrueFalseButtons() {
+        mFalseButton.setClickable(true);
+        mTrueButton.setClickable(true);
+    }
+
+
+    public void displayResult() {
+        int result = (mUserScore / mQuestionBank.length) * 100;
+        Toast.makeText(this, R.string.result_text + " " + result + "%", Toast.LENGTH_LONG).show();
     }
 }
 
